@@ -1,0 +1,20 @@
+# Blackbox exporter modules: reachability probes for OT targets.
+# ICMP requires NET_RAW; the compose service runs unprivileged, so the
+# default probes use tcp_connect (works everywhere). The icmp module is
+# defined for hosts where you grant the capability.
+modules:
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: ip4
+
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4

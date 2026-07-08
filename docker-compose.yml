@@ -1,0 +1,98 @@
+# Reusable observability stack for small industrial/OT deployments:
+# Prometheus + Alertmanager + Grafana + exporters, fully provisioned from
+# files. Works standalone (monitoring this host + its containers) and plugs
+# into the modbus-collector's /metrics (see docs/INTEGRATION.md).
+#
+#   cp .env.example .env
+#   docker compose up
+#
+#   Grafana      http://localhost:3000   (anonymous viewer; admin pw from .env)
+#   Prometheus   http://localhost:9090
+#   Alertmanager http://localhost:9093
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      # 15 d retention: OT boxes are small and the interesting questions are
+      # "this week" questions; long-term storage is out of scope (README).
+      - --storage.tsdb.retention.time=15d
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    environment:
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-http://127.0.0.1:9095/no-op}
+    volumes:
+      - ./alertmanager:/etc/alertmanager:ro
+      - alertmanager-data:/alertmanager
+    # Alertmanager cannot expand env vars in its config; render the webhook
+    # URL into a copy at startup (the only templated value).
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sed "s|__ALERT_WEBHOOK_URL__|$${ALERT_WEBHOOK_URL}|" \
+          /etc/alertmanager/alertmanager.yml > /tmp/alertmanager.yml
+        exec /bin/alertmanager --config.file=/tmp/alertmanager.yml \
+          --storage.path=/alertmanager
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      # Demo posture: anyone can look, only admin can edit.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_ANONYMOUS_ORG_NAME: Main Org.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me}
+      GF_USERS_DEFAULT_THEME: system
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - --path.rootfs=/host
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    restart: unless-stopped
+    volumes:
+      - ./exporters/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+
+volumes:
+  prometheus-data:
+  alertmanager-data:
+  grafana-data:

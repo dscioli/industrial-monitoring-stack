@@ -1,0 +1,52 @@
+# Host-level rules (node-exporter). Severity levels: page > warn > info.
+groups:
+  - name: host
+    rules:
+      - alert: HostDown
+        expr: up{job="node-exporter"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "Host exporter unreachable"
+          description: "node-exporter on {{ $labels.instance }} has been down for 2 minutes — the box may be off, crashed, or unreachable."
+
+      - alert: HostDiskAlmostFull
+        expr: |
+          (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}
+             / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) > 0.85
+        for: 10m
+        labels:
+          severity: warn
+        annotations:
+          summary: "Disk over 85% full"
+          description: "{{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | humanizePercentage }} full. Telemetry history and Prometheus data stop when the disk fills."
+
+      - alert: HostDiskCritical
+        expr: |
+          (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}
+             / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) > 0.95
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Disk over 95% full"
+          description: "{{ $labels.mountpoint }} on {{ $labels.instance }} is nearly full — data loss is imminent."
+
+      - alert: HostLowMemory
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+        for: 10m
+        labels:
+          severity: warn
+        annotations:
+          summary: "Less than 10% memory available"
+          description: "{{ $labels.instance }} has {{ $value | humanizePercentage }} memory available; the OOM killer is the next stop."
+
+      - alert: HostSustainedHighCpu
+        expr: 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.90
+        for: 15m
+        labels:
+          severity: warn
+        annotations:
+          summary: "CPU above 90% for 15 minutes"
+          description: "{{ $labels.instance }} CPU is saturated ({{ $value | humanizePercentage }}). Sustained load on a small OT box delays scrapes and control loops."

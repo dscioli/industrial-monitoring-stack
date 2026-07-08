@@ -1,0 +1,30 @@
+# Route everything to a generic webhook (URL rendered from the
+# ALERT_WEBHOOK_URL env var by the compose entrypoint — Alertmanager cannot
+# expand env vars itself). Grouping/repeat tuned for OT: few humans, no
+# on-call rotation — batch related alerts, don't re-page all night.
+
+route:
+  receiver: ops-webhook
+  group_by: [alertname, station]
+  group_wait: 30s        # collect a burst (e.g. one station's offline+level) into one notification
+  group_interval: 5m
+  repeat_interval: 4h    # a still-firing alert re-notifies every 4 h, not every few minutes
+  routes:
+    - matchers: [severity="info"]
+      receiver: ops-webhook
+      repeat_interval: 24h   # info level: once a day is plenty
+
+inhibit_rules:
+  # A dead collector makes every telemetry alert unreadable noise.
+  - source_matchers: [alertname="CollectorDown"]
+    target_matchers: [alertname=~"StationOffline|TankLevelLow|TankLevelHigh|NoSamplesIngested|PendingCommandsStuck|CollectorAlertActive"]
+  # An offline station's level/command alerts are consequences, not causes.
+  - source_matchers: [alertname="StationOffline"]
+    target_matchers: [alertname=~"TankLevelLow|TankLevelHigh|PendingCommandsStuck"]
+    equal: [station]
+
+receivers:
+  - name: ops-webhook
+    webhook_configs:
+      - url: "__ALERT_WEBHOOK_URL__"
+        send_resolved: true

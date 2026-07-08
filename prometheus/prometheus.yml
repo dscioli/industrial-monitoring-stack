@@ -1,0 +1,57 @@
+# Scrape configuration tuned for a small OT box:
+#   - telemetry job at 15 s (control-loop scale events)
+#   - infra jobs at 30 s (hosts and containers change slowly)
+#   - 15 d retention set on the server command line (docker-compose.yml)
+# Reasoning in the README ("OT vs IT monitoring").
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # The telemetry job: the modbus-collector's /metrics. Resolves when this
+  # stack shares a network with the collector (combined demo, or
+  # `docker network connect` — see docs/INTEGRATION.md). While unreachable
+  # the job is simply down and the fleet dashboards show "no data".
+  - job_name: modbus-collector
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["collector:8080"]
+
+  # Blackbox probes: "can we reach it at all?" — the OT question that comes
+  # before any application metric. Add/edit targets freely.
+  - job_name: blackbox-tcp
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+          - collector:1502   # Modbus TCP listener
+          - collector:8080   # collector API
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

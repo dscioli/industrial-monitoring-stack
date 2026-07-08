@@ -1,0 +1,71 @@
+# Telemetry rules — "is the field talking to us?" — built exclusively on the
+# modbus-collector's exported metrics. In OT, *absence* of data is the
+# highest-severity signal: a silent station is worse than a noisy one.
+#
+# Tank thresholds mirror the demo fleet config (stations.yaml:
+# level_start_cm 180 / level_stop_cm 420); adjust together with it.
+groups:
+  - name: telemetry
+    rules:
+      - alert: CollectorDown
+        expr: up{job="modbus-collector"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "modbus-collector unreachable"
+          description: "Prometheus cannot scrape the collector. Every field question is unanswerable until this is fixed — fix this first."
+
+      - alert: StationOffline
+        expr: collector_station_online == 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Station {{ $labels.station }} offline"
+          description: "Station {{ $labels.station }} has not sent a Modbus request within the collector's timeout for 5 minutes. Likely cell outage, power failure, or modem hang."
+
+      - alert: TankLevelLow
+        expr: collector_tank_level_cm < 180
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "Tank at station {{ $labels.station }} low"
+          description: "Filtered level is {{ $value | printf \"%.0f\" }} cm (< 180 cm) for 10 minutes — supply is at risk if the pumps do not keep up."
+
+      - alert: TankLevelHigh
+        expr: collector_tank_level_cm > 420
+        for: 10m
+        labels:
+          severity: warn
+        annotations:
+          summary: "Tank at station {{ $labels.station }} high"
+          description: "Filtered level is {{ $value | printf \"%.0f\" }} cm (> 420 cm) for 10 minutes — check the stop-on-high-level control before it overflows."
+
+      - alert: NoSamplesIngested
+        expr: sum(rate(collector_modbus_requests_total[10m])) == 0
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "No Modbus traffic for 10 minutes"
+          description: "The collector is up but no station wrote or read anything for 10 minutes. The whole field side is silent: check the inbound port (host 502), DNS, and the carrier."
+
+      - alert: PendingCommandsStuck
+        expr: collector_commands_pending > 0
+        for: 15m
+        labels:
+          severity: warn
+        annotations:
+          summary: "Commands stuck unconfirmed"
+          description: "{{ $value }} command(s) have been pending/applied without confirmation for 15 minutes — a station may be in LOCAL mode, faulted, or not reading its command window."
+
+      - alert: CollectorAlertActive
+        expr: collector_alerts_active > 0
+        for: 1m
+        labels:
+          severity: info
+        annotations:
+          summary: "Collector has active {{ $labels.type }} alert(s)"
+          description: "The collector's own alert engine reports {{ $value }} active {{ $labels.type }} alert(s); details in its event log (GET /api/events)."

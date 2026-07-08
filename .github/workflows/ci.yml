@@ -1,0 +1,59 @@
+name: CI
+
+# Config-only repo: no code to build, but the configs ARE the contract. This
+# validates them the same way the tools would at runtime, so a fork or PR can't
+# silently break a Prometheus rule, an Alertmanager route, or a dashboard.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PROM_IMAGE: prom/prometheus:v2.53.0
+      AM_IMAGE: prom/alertmanager:v0.27.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prometheus config + rules (promtool)
+        run: |
+          # Mount at /etc/prometheus so the config's rule_files glob
+          # (/etc/prometheus/rules/*.yml) resolves during the check.
+          docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" \
+            --entrypoint promtool "$PROM_IMAGE" \
+            check config /etc/prometheus/prometheus.yml
+          # Expand the rules glob INSIDE the container (the host has no such path).
+          docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" \
+            --entrypoint sh "$PROM_IMAGE" \
+            -c 'promtool check rules /etc/prometheus/rules/*.yml'
+
+      - name: Alertmanager config (amtool)
+        run: |
+          # Render the webhook placeholder exactly as the runtime entrypoint does;
+          # __ALERT_WEBHOOK_URL__ is not a valid URL and amtool would reject it.
+          sed 's|__ALERT_WEBHOOK_URL__|http://localhost:9095/no-op|' \
+            alertmanager/alertmanager.yml > /tmp/alertmanager.yml
+          docker run --rm -v /tmp/alertmanager.yml:/tmp/alertmanager.yml:ro \
+            --entrypoint amtool "$AM_IMAGE" check-config /tmp/alertmanager.yml
+
+      - name: Grafana dashboards (JSON syntax)
+        run: |
+          for f in grafana/dashboards/*.json; do
+            echo "checking $f"
+            jq empty "$f"
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Provisioning + exporter YAML parse
+        run: |
+          pip install --quiet pyyaml
+          python -c "import glob, yaml; files = sorted(glob.glob('grafana/provisioning/**/*.yml', recursive=True) + glob.glob('exporters/*.yml')); assert files, 'no YAML files matched'; [yaml.safe_load(open(f)) for f in files]; print('YAML ok:', files)"
+
+      - name: docker compose syntax
+        run: docker compose config -q
