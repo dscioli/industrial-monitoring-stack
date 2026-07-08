@@ -296,6 +296,9 @@
           "refId": "A"
         }
       ],
+      "transformations": [
+        { "id": "filterFieldsByName", "options": { "include": { "pattern": ".+" } } }
+      ],
       "title": "Pump state timeline",
       "type": "state-timeline"
     },
