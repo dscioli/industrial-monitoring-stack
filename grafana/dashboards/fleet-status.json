@@ -221,7 +221,7 @@
               { "color": "red", "value": 420 }
             ]
           },
-          "unit": "lengthcm"
+          "unit": "suffix:cm"
         },
         "overrides": []
       },
