@@ -75,10 +75,11 @@ The telemetry panels light up when the collector job is reachable — see
 
 ## Screenshots
 
-<!-- Placeholders: capture from the running combined demo -->
-| Fleet status | Station overview (raw vs filtered) | Infra health |
-|---|---|---|
-| _screenshot placeholder_ | _screenshot placeholder_ | _screenshot placeholder_ |
+| Fleet status | Station overview (raw vs filtered) |
+|---|---|
+| ![Fleet status](docs/img/fleet-status.png) | ![Station overview](docs/img/station-overview.png) |
+
+Infra health: run the standalone stack (`docker compose up`) to see host + container dashboards — not included in the combined demo.
 
 ## Alert rules
 
