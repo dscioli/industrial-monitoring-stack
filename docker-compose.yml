@@ -4,7 +4,7 @@
 # into the modbus-collector's /metrics (see docs/INTEGRATION.md).
 #
 #   cp .env.example .env
-#   docker compose up
+#   docker compose up -d
 #
 #   Grafana      http://localhost:3000   (anonymous viewer; admin pw from .env)
 #   Prometheus   http://localhost:9090

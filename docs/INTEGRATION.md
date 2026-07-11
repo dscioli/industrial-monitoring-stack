@@ -11,7 +11,7 @@ this stack's Prometheus/Grafana + the operator dashboard) on one network:
 
 ```bash
 cd ../modbus-collector
-docker compose -f docker-compose.demo.yml up
+docker compose -f docker-compose.demo.yml up -d
 ```
 
 It mounts this repo's `prometheus/` and `grafana/` directories directly, so

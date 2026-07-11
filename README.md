@@ -41,7 +41,7 @@ flowchart LR
 ```
 
 Everything is **provisioned from files** — datasource, dashboard providers,
-dashboards, rules. `docker compose up` on a clean clone produces a working,
+dashboards, rules. `docker compose up -d` on a clean clone produces a working,
 opinionated monitoring box with zero clicking.
 
 ## Quick start (standalone)
@@ -79,7 +79,7 @@ The telemetry panels light up when the collector job is reachable — see
 |---|---|
 | ![Fleet status](docs/img/fleet-status.png) | ![Station overview](docs/img/station-overview.png) |
 
-Infra health: run the standalone stack (`docker compose up`) to see host + container dashboards — not included in the combined demo.
+Infra health: run the standalone stack (`docker compose up -d`) to see host + container dashboards — not included in the combined demo.
 
 ## Alert rules
 
