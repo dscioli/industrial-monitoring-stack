@@ -127,7 +127,7 @@ more than any p99. Hence:
   container start (Alertmanager cannot expand env vars itself).
 - [`exporters/blackbox.yml`](exporters/blackbox.yml) — probe modules
   (`tcp_connect` default; `icmp` needs NET_RAW).
-- [`grafana/`](grafana/) — provisioning (datasource, provider) + the three
+- [`grafana/`](grafana/) — provisioning (datasource, provider) + the four
   dashboards as JSON.
 
 Env (`.env`): `GRAFANA_ADMIN_PASSWORD`, `GRAFANA_PORT`, `ALERT_WEBHOOK_URL`,
