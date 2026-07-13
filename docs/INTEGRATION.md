@@ -51,7 +51,7 @@ the Modbus listener (host port 502).
 
 - Prometheus → Status → Targets: `modbus-collector` **UP**, scraped every 15 s.
 - Grafana → Industrial → **Fleet status**: stations online, tank levels moving.
-- Grafana → **Station overview**, station 3: the raw-vs-filtered level pair.
+- Grafana → **Tank overview**, station 3: the raw-vs-filtered level pair.
 - Silencing a station (stop a simulator) fires `StationOffline` after 5 m,
   visible in Prometheus → Alerts and delivered to your webhook by
   Alertmanager.

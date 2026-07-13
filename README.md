@@ -62,9 +62,10 @@ Dashboards (folder **Industrial**):
 - **Fleet status** — all stations at a glance: connectivity and pump state
   timelines, tank levels with threshold lines, active alerts, Modbus traffic
   rate, blackbox reachability.
-- **Station overview** — one station deep-dive: online/last-seen/fault
-  stats, the **raw vs filtered level** signature chart, pump state timeline,
-  motor current.
+- **Pump station overview** — one pump station deep-dive: online/last-seen/
+  fault stats, start/run-time counters, pump state timeline, motor current.
+- **Tank overview** — one tank site deep-dive: online/last-seen/fault stats
+  and the **raw vs filtered level** signature chart.
 - **Infra health** — host CPU/memory/disk/network + per-container CPU/memory
   (node-exporter + cAdvisor).
 
@@ -75,9 +76,9 @@ The telemetry panels light up when the collector job is reachable — see
 
 ## Screenshots
 
-| Fleet status | Station overview (raw vs filtered) |
-|---|---|
-| ![Fleet status](docs/img/fleet-status.png) | ![Station overview](docs/img/station-overview.png) |
+| Fleet status | Pump station overview | Tank overview (raw vs filtered) |
+|---|---|---|
+| ![Fleet status](docs/img/fleet-status.png) | ![Pump station overview](docs/img/pump-station-overview.png) | ![Tank overview](docs/img/tank-overview.png) |
 
 Infra health: run the standalone stack (`docker compose up -d`) to see host + container dashboards — not included in the combined demo.
 

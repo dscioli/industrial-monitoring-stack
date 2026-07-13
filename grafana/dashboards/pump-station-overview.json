@@ -1,6 +1,6 @@
 {
   "annotations": { "list": [] },
-  "description": "Per-station deep dive: connectivity, level (raw vs filtered), pump state, motor current, alarms, counters.",
+  "description": "Pump-station deep dive: connectivity, electrical faults, start/run counters, pump state, motor current. Metrics expose no station_type label, so the station selector derives pump stations as online stations minus those emitting collector_tank_level_cm (only tank sites emit it).",
   "editable": true,
   "graphTooltip": 1,
   "links": [],
@@ -194,72 +194,6 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "The signature chart: noisy raw (calibrated-only) level vs the collector's moving-median output. Dashed lines mark the demo control thresholds (start 180 / stop 420 cm). Tank sites only — pump-only stations show no data.",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "lineWidth": 2,
-            "pointSize": 4,
-            "showPoints": "never",
-            "spanNulls": false,
-            "thresholdsStyle": { "mode": "dashed" }
-          },
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "transparent", "value": null },
-              { "color": "orange", "value": 180 },
-              { "color": "red", "value": 420 }
-            ]
-          },
-          "unit": "suffix:cm"
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "raw" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#9aa0a6" } },
-              { "id": "custom.lineWidth", "value": 1 }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "filtered" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#3274D9" } }
-            ]
-          }
-        ]
-      },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 4 },
-      "id": 6,
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "none" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "collector_tank_level_raw_cm{station=\"$station\"}",
-          "legendFormat": "raw",
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "collector_tank_level_cm{station=\"$station\"}",
-          "legendFormat": "filtered",
-          "refId": "B"
-        }
-      ],
-      "title": "Tank level — raw vs filtered",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "description": "Contactor feedback over time.",
       "fieldConfig": {
         "defaults": {
@@ -278,8 +212,8 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 13 },
-      "id": 7,
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "id": 6,
       "options": {
         "alignValue": "left",
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -321,8 +255,8 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 13 },
-      "id": 8,
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+      "id": 7,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
         "tooltip": { "mode": "single", "sort": "none" }
@@ -347,17 +281,14 @@
       {
         "current": {},
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "definition": "label_values(collector_station_online, station)",
+        "definition": "query_result(collector_station_online unless on(station) collector_tank_level_cm)",
         "includeAll": false,
         "label": "Station",
         "multi": false,
         "name": "station",
         "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(collector_station_online, station)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
+        "query": "query_result(collector_station_online unless on(station) collector_tank_level_cm)",
+        "regex": "/station=\"([^\"]+)\"/",
         "refresh": 2,
         "sort": 3,
         "type": "query"
@@ -366,6 +297,6 @@
   },
   "time": { "from": "now-6h", "to": "now" },
   "timezone": "browser",
-  "title": "Station overview",
-  "uid": "station-overview"
+  "title": "Pump station overview",
+  "uid": "pump-station-overview"
 }
